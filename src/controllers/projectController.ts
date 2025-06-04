@@ -173,10 +173,21 @@ export const getMyProjects = async (req: Request, res: Response, next: NextFunct
                 creator: { select: { id: true, name: true, email: true } }
             }
         });
+
+        // Para cada proyecto, contar las solicitudes (collaborationRequest)
+        const projectsWithApplications = await Promise.all(
+          projects.map(async (project) => {
+            const applicationsCount = await prisma.collaborationRequest.count({
+              where: { projectId: project.id }
+            });
+            return { ...project, applicationsCount };
+          })
+        );
+
         const totalProjects = await prisma.project.count({ where: { creatorId: userId } });
         res.status(200).json({
             message: 'Mis proyectos obtenidos.',
-            data: projects,
+            data: projectsWithApplications,
             pagination: {
                 currentPage: pageNum,
                 totalPages: Math.ceil(totalProjects / limitNum),
