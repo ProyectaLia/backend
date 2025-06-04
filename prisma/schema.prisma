@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                        Int      @id @default(autoincrement())
+  name                      String
+  email                     String   @unique
+  password                  String
+  career                    String?
+  skills                    String
+  interests                 String
+  portfolioLink             String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  projects                  Project[] // Proyectos creados por este usuario
+  collaborationRequestsMade CollaborationRequest[] @relation("ApplicantRequests")
+  // Para proyectos en los que el usuario es colaborador (muchos-a-muchos con Project)
+  collaboratingInProjects   Project[] @relation("ProjectCollaborators")
+}
+
+model Project {
+  id                   Int      @id @default(autoincrement())
+  title                String
+  description          String
+  objectives           String
+  requiredSkills       String
+  areaTheme            String
+  status               String    @default("BUSCANDO_COLABORADORES")
+  creatorId            Int
+  creator              User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  collaborationRequests CollaborationRequest[] // Solicitudes recibidas para este proyecto
+  // Para usuarios que son colaboradores en este proyecto (muchos-a-muchos con Project)
+  collaborators        User[]   @relation("ProjectCollaborators")
+
+  @@index([status])
+}
+
+model CollaborationRequest {
+  id          Int      @id @default(autoincrement())
+  message     String?
+  status      String   @default("PENDIENTE")
+  projectId   Int
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  applicantId Int
+  applicant   User     @relation("ApplicantRequests", fields: [applicantId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+}
